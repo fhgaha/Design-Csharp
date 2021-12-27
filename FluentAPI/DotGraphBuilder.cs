@@ -6,6 +6,21 @@ using System.Text;
 
 namespace FluentApi.Graph
 {
+    public interface IGraphBuilder<T>
+    {
+        IGraphBuilder<NodeBuilder> AddNode(string nodeName);
+        IGraphBuilder<EdgeBuilder> AddEdge(string head, string tail);
+        IGraphBuilder<T> With(Action<T> func);
+        string Build();
+    }
+
+    public interface IElementBuilder<T>
+    {
+        IElementBuilder<T> Color(string color);
+        IElementBuilder<T> FontSize(int size);
+        IElementBuilder<T> Label(string label);
+    }
+
     public class DotGraphBuilder : IGraphBuilder<NodeBuilder>, IGraphBuilder<EdgeBuilder>
     {
         static Graph graph;
@@ -62,22 +77,7 @@ namespace FluentApi.Graph
         Box, Ellipse
     }
 
-    public interface IGraphBuilder<T2>
-    {
-        IGraphBuilder<NodeBuilder> AddNode(string nodeName);
-        IGraphBuilder<EdgeBuilder> AddEdge(string head, string tail);
-        IGraphBuilder<T2> With(Action<T2> func);
-        string Build();
-    }
-
-    public abstract class IElementBuilder<T>
-    {
-        public abstract IElementBuilder<T> Color(string color);
-        public abstract IElementBuilder<T> FontSize(int size);
-        public abstract IElementBuilder<T> Label(string label);
-    }
-
-    public class NodeBuilder 
+    public class NodeBuilder
     {
         GraphNode node;
         public NodeBuilder(GraphNode node) => this.node = node;
@@ -106,7 +106,7 @@ namespace FluentApi.Graph
         }
     }
 
-    public class EdgeBuilder 
+    public class EdgeBuilder
     {
         GraphEdge edge;
         public EdgeBuilder(GraphEdge edge) => this.edge = edge;
