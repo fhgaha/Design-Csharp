@@ -1,38 +1,36 @@
 using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
 
 namespace FluentApi.Graph
 {
-    public interface IGraphBuilder<T>
+    public enum NodeShape
     {
-        IGraphBuilder<NodeBuilder> AddNode(string nodeName);
-        IGraphBuilder<EdgeBuilder> AddEdge(string head, string tail);
-        IGraphBuilder<T> With(Action<T> func);
+        Box, Ellipse
+    }
+
+    public interface IGraphBuilder
+    {
+        IAttributeWriter<NodeBuilder> AddNode(string nodeName);
+        IAttributeWriter<EdgeBuilder> AddEdge(string head, string tail);
         string Build();
     }
 
-    public interface IElementBuilder<T>
+    public interface IAttributeWriter<TBuilder> : IGraphBuilder
     {
-        IElementBuilder<T> Color(string color);
-        IElementBuilder<T> FontSize(int size);
-        IElementBuilder<T> Label(string label);
+        IGraphBuilder With(Action<TBuilder> func);
     }
 
-    public class DotGraphBuilder : IGraphBuilder<NodeBuilder>, IGraphBuilder<EdgeBuilder>
+    public class DotGraphBuilder : IGraphBuilder, IAttributeWriter<NodeBuilder>, IAttributeWriter<EdgeBuilder>
     {
         static Graph graph;
         object lastElement;
 
-        public static DotGraphBuilder DirectedGraph(string graphName)
+        public static IGraphBuilder DirectedGraph(string graphName)
         {
             graph = new Graph(graphName, true, true);
             return new DotGraphBuilder();
         }
 
-        public static DotGraphBuilder UndirectedGraph(string graphName)
+        public static IGraphBuilder UndirectedGraph(string graphName)
         {
             graph = new Graph(graphName, false, true);
             return new DotGraphBuilder();
@@ -43,44 +41,40 @@ namespace FluentApi.Graph
             return graph.ToDotFormat();
         }
 
-        public IGraphBuilder<NodeBuilder> AddNode(string nodeName)
+        public IAttributeWriter<NodeBuilder> AddNode(string nodeName)
         {
             var node = graph.AddNode(nodeName);
             lastElement = node;
             return this;
         }
 
-        public IGraphBuilder<EdgeBuilder> AddEdge(string head, string tail)
+        public IAttributeWriter<EdgeBuilder> AddEdge(string head, string tail)
         {
             var edge = graph.AddEdge(head, tail);
             lastElement = edge;
             return this;
         }
 
-        public IGraphBuilder<NodeBuilder> With(Action<NodeBuilder> func)
+        public IGraphBuilder With(Action<NodeBuilder> func)
         {
             var nodeBuilder = new NodeBuilder((GraphNode)lastElement);
             func(nodeBuilder);
             return this;
         }
 
-        public IGraphBuilder<EdgeBuilder> With(Action<EdgeBuilder> func)
+        public IGraphBuilder With(Action<EdgeBuilder> func)
         {
-            var nodeBuilder = new EdgeBuilder((GraphEdge)lastElement);
-            func(nodeBuilder);
+            var edgeBuilder = new EdgeBuilder((GraphEdge)lastElement);
+            func(edgeBuilder);
             return this;
         }
     }
 
-    public enum NodeShape
-    {
-        Box, Ellipse
-    }
-
-    public class NodeBuilder
+    public class NodeBuilder 
     {
         GraphNode node;
         public NodeBuilder(GraphNode node) => this.node = node;
+
         public NodeBuilder Color(string color)
         {
             node.Attributes.Add("color", color);
@@ -106,10 +100,11 @@ namespace FluentApi.Graph
         }
     }
 
-    public class EdgeBuilder
+    public class EdgeBuilder 
     {
         GraphEdge edge;
         public EdgeBuilder(GraphEdge edge) => this.edge = edge;
+
         public EdgeBuilder Color(string color)
         {
             edge.Attributes.Add("color", color);
